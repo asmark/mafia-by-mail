@@ -22,11 +22,21 @@ class Mailgun(object):
 
     async def send(self, to, message, **kwargs):
         form_data = aiohttp.helpers.FormData(kwargs)
-        form_data.add_field('to', to)
+        if isinstance(to, str):
+            to = [to]
+
+        for v in to:
+            form_data.add_field('to', v)
+
         form_data.add_field('message', io.StringIO(message.as_string()))
 
         req = await self._request('POST', 'messages.mime', form_data)
-        return (await req.json())
+        resp = (await req.json())
+
+        if req.status != 200:
+            raise ValueError(resp['message'])
+        else:
+            return resp
 
 
 def make_markdown_email(text, headers, **kwargs):

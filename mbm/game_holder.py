@@ -35,6 +35,7 @@ class GameHolder(object):
                     'required': ['name', 'email', 'role']
                 }
             },
+            'moderator_email': {'type': 'string'},
             'night_duration': {'type': 'number'},
             'day_duration': {'type': 'number'},
         },
@@ -66,6 +67,7 @@ class GameHolder(object):
             } for player_spec in spec['players']],
             'night_duration': spec['night_duration'],
             'day_duration': spec['day_duration'],
+            'moderator_email': spec.get('moderator_email'),
         }, state)
 
     @classmethod

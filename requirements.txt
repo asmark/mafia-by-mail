@@ -5,3 +5,5 @@ jsonschema
 toml
 markdown
 ago
+mako
+celery

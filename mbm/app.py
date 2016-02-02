@@ -28,6 +28,7 @@ def make_services(config):
 async def init(config, loop):
     app = web.Application(loop=loop)
     app.update(make_services(config))
+    app['config'] = config
 
     app.router.add_route('POST', '/new_game', handlers.new_game)
     app.router.add_route('POST', '/process_mail', handlers.process_mail)
