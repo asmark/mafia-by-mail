@@ -9,6 +9,7 @@ import shutil
 
 import mafia.game
 
+from . import async_filelock
 from . import roles
 from . import string
 
@@ -92,16 +93,21 @@ class GameHolder(object):
 
     @classmethod
     def lock(cls, path):
-        return fasteners.InterProcessLock(os.path.join(path,
-                                                       cls.LOCK_FILENAME))
+        return async_filelock.FileLock(os.path.join(path, cls.LOCK_FILENAME))
 
     @classmethod
-    @contextlib.contextmanager
-    def transaction(cls, path):
-        with cls.lock(path):
+    async def transaction(cls, path):
+        async with cls.lock(path):
             gh = cls.load(path)
-            yield gh
-            gh.save(path)
+
+            class ReturnProxy(object):
+                def __enter__(self):
+                    return gh
+
+                def __exit__(self, exc_type, exc_value, exc_tb):
+                    gh.save(path)
+
+            return ReturnProxy()
 
     @classmethod
     def destroy(cls, path):

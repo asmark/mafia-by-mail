@@ -7,8 +7,8 @@ services = app.make_services(app.read_config())
 
 
 @celery.app.task
-def end_night(id):
-    with services['store'].transaction(id) as gh:
+async def end_night(id):
+    with (await services['store'].transaction(id)) as gh:
         alive = set(gh.state.get_alive_players())
         gh.state.turn.run_plan()
         deaths = alive - set(gh.state.get_alive_players())
@@ -26,8 +26,8 @@ def end_night(id):
 
 
 @celery.app.task
-def end_day(id):
-    with services['store'].transaction(id) as gh:
+async def end_day(id):
+    with (await services['store'].transaction(id)) as gh:
         gh.state.turn.run_ballot()
         gh.state.next_turn()
 

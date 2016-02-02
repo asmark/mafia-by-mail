@@ -18,7 +18,7 @@ async def new_game(request):
     except jsonschema.exceptions.ValidationError as e:
         return web.json_response({'error': e.message}, status=400)
 
-    with request.app['store'].transaction(id) as gh:
+    with (await request.app['store'].transaction(id)) as gh:
         players = dict(zip(gh.state.players, gh.meta['players']))
         mails = []
 

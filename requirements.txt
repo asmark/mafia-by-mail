@@ -1,5 +1,4 @@
 -e git://github.com/rfw/mafia.git#egg=mafia
-fasteners
 aiohttp
 jsonschema
 toml
