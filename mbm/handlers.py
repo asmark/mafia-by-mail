@@ -50,8 +50,8 @@ async def new_game(request):
             await request.app['mail'].send(
                 player_spec['email'],
                 mail.make_markdown_email(text, {
-                    'From': 'Mafia Game <game-{id}-private@{domain}>'.format(
-                        id=id, domain=request.app['mail'].domain),
+                    'From': 'Mafia Game (Private) <game-{id}-private@{domain}>'
+                        .format(id=id, domain=request.app['mail'].domain),
                     'To': '{name} <{email}>'.format(**player_spec),
                     'Subject': '{name}, Your Mafia Role'.format(**player_spec)
                 }, extensions=['markdown.extensions.nl2br']))
@@ -60,8 +60,8 @@ async def new_game(request):
             [player_spec['email'] for player_spec in gh.meta['players']],
             mail.make_markdown_email(
                 request.app['mako'].get_template('welcome.mako').render(), {
-                'From': 'Mafia Game <game-{id}-public@{domain}>'.format(
-                    id=id, domain=request.app['mail'].domain),
+                'From': 'Mafia Game (Public) <game-{id}-public@{domain}>'
+                    .format(id=id, domain=request.app['mail'].domain),
                 'To': ', '.join('{name} <{email}>'.format(**player_spec)
                                 for player_spec in gh.meta['players']),
                 'Subject': 'Welcome to Mafia'
@@ -73,9 +73,10 @@ async def new_game(request):
                 mail.make_markdown_email(
                     request.app['mako'].get_template(
                         'moderator_welcome.mako').render(mails=mails), {
-                    'From': 'Mafia Game Moderator <game-{id}-mod@{domain}>'.format(
-                        id=id, domain=request.app['mail'].domain),
-                    'To': '{name} <{email}>'.format(**player_spec),
+                    'From': 'Mafia Game (Mod) <game-{id}-mod@{domain}>'
+                        .format(id=id, domain=request.app['mail'].domain),
+                    'To': 'Moderator <{email}>'.format(
+                        email=gh.meta['moderator_email']),
                     'Subject': 'Mafia Moderator Log'
                 }, extensions=['markdown.extensions.nl2br']))
 
