@@ -105,7 +105,8 @@ class GameHolder(object):
                     return gh
 
                 def __exit__(self, exc_type, exc_value, exc_tb):
-                    gh.save(path)
+                    if exc_value is None:
+                        gh.save(path)
 
             return ReturnProxy()
 
