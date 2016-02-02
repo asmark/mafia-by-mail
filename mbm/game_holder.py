@@ -1,3 +1,4 @@
+import contextlib
 import fasteners
 import inspect
 import json
@@ -9,6 +10,7 @@ import shutil
 import mafia.game
 
 from . import roles
+from . import string
 
 
 class GameHolder(object):
@@ -29,12 +31,12 @@ class GameHolder(object):
                         'role': {'type': 'string'},
                         'flavored_role': {'type': 'string'},
                         'flavor_text': {'type': 'string'},
-                    }
+                    },
                     'required': ['name', 'email', 'role']
                 }
             },
-            'night_duration': {'type': 'string'},
-            'day_duration': {'type': 'string'},
+            'night_duration': {'type': 'number'},
+            'day_duration': {'type': 'number'},
         },
         'required': ['night_duration', 'day_duration']
     }
@@ -45,7 +47,7 @@ class GameHolder(object):
 
     @classmethod
     def from_spec(cls, spec):
-        jsonschema.validate(spec, self.SPEC_SCHEMA)
+        jsonschema.validate(spec, cls.SPEC_SCHEMA)
 
         state = mafia.game.Game([roles.ROLES[player_spec['role']]()
                                  for player_spec in spec['players']])
@@ -53,13 +55,14 @@ class GameHolder(object):
         return cls({
             'players': [{
                 'name': player_spec['name'],
-                'email': player_spec['email']
+                'email': player_spec['email'],
                 'role': player_spec['role'],
                 'flavored_role': player_spec.get(
                     'flavored_role', player_spec['role']),
                 'flavor_text': player_spec.get(
                     'flavor_text',
-                    inspect.getdoc(roles.ROLES[player_spec['role']]))
+                    string.reformat_lines(
+                        inspect.getdoc(roles.ROLES[player_spec['role']])))
             } for player_spec in spec['players']],
             'night_duration': spec['night_duration'],
             'day_duration': spec['day_duration'],
@@ -67,7 +70,7 @@ class GameHolder(object):
 
     @classmethod
     def load(cls, path):
-        with open(os.path.join(path, cls.META_FILENAME), 'rb') as f:
+        with open(os.path.join(path, cls.META_FILENAME), 'r') as f:
             meta = json.load(f)
 
         with open(os.path.join(path, cls.STATE_FILENAME), 'rb') as f:
@@ -79,19 +82,19 @@ class GameHolder(object):
         if not os.path.exists(path):
             os.mkdir(path)
 
-        with open(os.path.join(path, cls.META_FILENAME), 'wb') as f:
+        with open(os.path.join(path, self.META_FILENAME), 'w') as f:
             json.dump(self.meta, f)
 
-        with open(os.path.join(path, cls.STATE_FILENAME), 'wb') as f:
-            json.dump(self.state, f)
+        with open(os.path.join(path, self.STATE_FILENAME), 'wb') as f:
+            pickle.dump(self.state, f)
 
     @classmethod
     def lock(cls, path):
         return fasteners.InterProcessLock(os.path.join(path,
                                                        cls.LOCK_FILENAME))
 
-    @contextlib.contextmanager
     @classmethod
+    @contextlib.contextmanager
     def transaction(cls, path):
         with cls.lock(path):
             gh = cls.load(path)
@@ -112,6 +115,8 @@ class Store(object):
         return os.path.join(self.root, id)
 
     def create(self, id, spec):
+        os.mkdir(os.path.join(self.root, id))
+
         gh = GameHolder.from_spec(spec)
         gh.save(self._get_path(id))
 

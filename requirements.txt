@@ -3,3 +3,5 @@ fasteners
 aiohttp
 jsonschema
 toml
+markdown
+ago
