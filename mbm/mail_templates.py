@@ -1,14 +1,15 @@
 from . import mail
 
 
-def send_private(mailer, gh, id, player_spec, text):
+def send_private(mailer, gh, id, player_spec, text, reply=False):
     return mailer.send(
         player_spec['email'],
         mail.make_markdown_email(text, {
             'From': '"Mafia Game (Private)" <game-{id}-private@{domain}>'
                 .format(id=id, domain=mailer.domain),
             'To': '{name} <{email}>'.format(**player_spec),
-            'Subject': '{name}, Your Mafia Role'.format(**player_spec)
+            'Subject': '{re}{name}, Your Mafia Role'.format(
+                re='' if not reply else 'Re: ', **player_spec)
         }, extensions=['markdown.extensions.nl2br']))
 
 

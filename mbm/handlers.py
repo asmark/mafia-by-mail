@@ -149,7 +149,8 @@ async def handle_night(gh, id, request, player, player_spec, players,
         request.app['mail'], gh, id, player_spec,
         request.app['mako'].get_template('night_action.mako').render(
             gh=gh, player=player, players=players, plan=plan,
-            commands=commands, results=results))
+            commands=commands, results=results),
+        reply=True)
 
 
 async def handle_day(gh, id, request, player, player_spec, players,
@@ -165,13 +166,15 @@ async def handle_day(gh, id, request, player, player_spec, players,
 
         await mail_templates.send_private(
             request.app['mail'], gh, id, player_spec,
-            "You retracted your vote.")
+            "You retracted your vote.", reply=True)
     else:
         match = re.match(r'vote (?P<name>.+?)$', text)
         if match is None:
             await mail_templates.send_private(
                 request.app['mail'], gh, id, player_spec,
-                "No idea what you wanted. Try **vote _player_** or **retract**?")
+                "No idea what you wanted."
+                "Try **vote _player_** or **retract**?",
+                reply=True
             return
 
         try:
@@ -179,7 +182,9 @@ async def handle_day(gh, id, request, player, player_spec, players,
         except KeyError:
             await mail_templates.send_private(
                 request.app['mail'], gh, id, player_spec,
-                "Couldn't find a player called '{}'.".format(match.group('name')))
+                "Couldn't find a player called '{}'.".format(
+                    match.group('name')),
+                reply=True)
             return
 
         try:
@@ -187,12 +192,15 @@ async def handle_day(gh, id, request, player, player_spec, players,
         except invalidities.Invalidity as e:
             await mail_templates.send_private(
                 request.app['mail'], gh, id, player_spec,
-                "Could not vote for {}: {}".format(players[votee]['name'], str(e)))
+                "Could not vote for {}: {}".format(players[votee]['name'],
+                                                   str(e)),
+                reply=True)
             return
 
         await mail_templates.send_private(
             request.app['mail'], gh, id, player_spec,
-            "You cast your vote for **{}**.".format(players[votee]['name']))
+            "You cast your vote for **{}**.".format(players[votee]['name']),
+            reply=True)
 
     await mail_templates.send_public(
         request.app['mail'], gh, id,
