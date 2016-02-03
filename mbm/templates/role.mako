@@ -10,7 +10,7 @@ Welcome, ${player_spec['name']}.
 You are the **${player_spec['flavored_role']}**. _${player_spec['flavor_text']}_
 
 <%
-faction_friends = player.get_faction().get_friends(gh.state)
+faction_friends = [friend for friend in player.get_faction().get_friends(gh.state) if friend is not player]
 %>
 % if faction_friends is not None:
 
@@ -19,9 +19,7 @@ faction_friends = player.get_faction().get_friends(gh.state)
 You know the following people in your faction:
 
 % for friend in faction_friends:
-% if friend is not player:
 * ${players[friend]['name']}
-% endif
 % endfor
 % else:
 There is nobody you know in your faction.
