@@ -1,5 +1,4 @@
 import contextlib
-import fasteners
 import inspect
 import json
 import jsonschema
