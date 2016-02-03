@@ -1,22 +1,26 @@
 from mafia import actions
 
+from . import string
+
+T = string.Template
+
 
 COMMANDS = {
-    actions.Roleblock: 'roleblock $target',
-    actions.Kill: 'kill $target',
-    actions.Investigate: 'investigate $target',
-    actions.Protect: 'protect $target',
-    actions.Drive: 'drive $target_a with $target_b',
-    actions.Suicide: 'commit suicide',
-    actions.Autopsy: 'autopsy $target',
-    actions.Commute: 'commute',
-    actions.Watch: 'watch $target',
-    actions.Track: 'track $target',
-    actions.Bodyguard: 'bodyguard $target',
-    actions.Recruit: 'recruit $target',
-    actions.StealVote: 'steal vote from $target',
-    actions.Redirect: 'redirect $target to $redirectee',
-    actions.Deflect: 'deflect $target onto $deflectee',
-    actions.Hide: 'hide behind $target',
-    actions.Jail: 'jail $target',
+    actions.Roleblock: T('roleblock $target'),
+    actions.Kill: T('kill $target'),
+    actions.Investigate: T('investigate $target'),
+    actions.Protect: T('protect $target'),
+    actions.Drive: T('drive $target_a with $target_b'),
+    actions.Suicide: T('commit suicide'),
+    actions.Autopsy: T('autopsy $target'),
+    actions.Commute: T('commute'),
+    actions.Watch: T('watch $target'),
+    actions.Track: T('track $target'),
+    actions.Bodyguard: T('bodyguard $target'),
+    actions.Recruit: T('recruit $target'),
+    actions.StealVote: T('steal vote from $target'),
+    actions.Redirect: T('redirect $target to $redirectee'),
+    actions.Deflect: T('deflect $target onto $deflectee'),
+    actions.Hide: T('hide behind $target'),
+    actions.Jail: T('jail $target'),
 }

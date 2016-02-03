@@ -14,6 +14,23 @@ from . import roles
 from . import string
 
 
+class Transaction(object):
+    def __init__(self, path):
+        self.path = path
+        self.lock = GameHolder.lock(self.path)
+        self.gh = None
+
+    async def __aenter__(self):
+        await self.lock.acquire()
+        self.gh = GameHolder.load(self.path)
+        return self.gh
+
+    async def __aexit__(self, exc_type, exc_value, exc_tb):
+        if exc_value is None:
+            self.gh.save(self.path)
+        await self.lock.release()
+
+
 class GameHolder(object):
     STATE_FILENAME = 'state'
     META_FILENAME = 'meta'
@@ -96,19 +113,8 @@ class GameHolder(object):
         return async_filelock.FileLock(os.path.join(path, cls.LOCK_FILENAME))
 
     @classmethod
-    async def transaction(cls, path):
-        async with cls.lock(path):
-            gh = cls.load(path)
-
-            class ReturnProxy(object):
-                def __enter__(self):
-                    return gh
-
-                def __exit__(self, exc_type, exc_value, exc_tb):
-                    if exc_value is None:
-                        gh.save(path)
-
-            return ReturnProxy()
+    def transaction(cls, path):
+        return Transaction(path)
 
     @classmethod
     def destroy(cls, path):

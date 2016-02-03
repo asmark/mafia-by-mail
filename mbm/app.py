@@ -6,7 +6,6 @@ import os
 import toml
 
 from . import game_holder
-from . import handlers
 from . import mail
 
 
@@ -26,6 +25,8 @@ def make_services(config):
 
 
 async def init(config, loop):
+    from . import handlers
+
     app = web.Application(loop=loop)
     app.update(make_services(config))
     app['config'] = config
