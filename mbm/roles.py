@@ -55,6 +55,7 @@ ROLES = {
 
 for suffix, maker in {
     'Cop': roles.cop,
+    'Miller': roles.miller,
     'Doctor': roles.doctor,
     'Roleblocker': roles.roleblocker,
     'Bus Driver': roles.bus_driver,
