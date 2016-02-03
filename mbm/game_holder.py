@@ -67,8 +67,13 @@ class GameHolder(object):
     def from_spec(cls, spec):
         jsonschema.validate(spec, cls.SPEC_SCHEMA)
 
-        state = mafia.game.Game([roles.ROLES[player_spec['role']]()
-                                 for player_spec in spec['players']])
+        player_roles = [roles.ROLES[player_spec['role']]()
+                        for player_spec in spec['players']]
+        state = mafia.game.Game([role.player for role in player_roles])
+        for role in player_roles:
+            role.finish(state)
+
+        players = dict(zip(state.players, spec['players']))
 
         return cls({
             'players': [{
@@ -79,10 +84,8 @@ class GameHolder(object):
                 'flavored_role': player_spec.get(
                     'flavored_role', player_spec['role']),
                 'flavor_text': player_spec.get(
-                    'flavor_text',
-                    string.reformat_lines(
-                        inspect.getdoc(roles.ROLES[player_spec['role']])))
-            } for player_spec in spec['players']],
+                    'flavor_text', role.describe(players))
+            } for role, player_spec in zip(player_roles, spec['players'])],
             'night_duration': spec['night_duration'],
             'day_duration': spec['day_duration'],
             'moderator_email': spec.get('moderator_email'),

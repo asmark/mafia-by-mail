@@ -10,7 +10,9 @@ Welcome, ${player_spec['name']}.
 You are the **${player_spec['flavored_role']}**. _${player_spec['flavor_text']}_
 
 <%
-faction_friends = [friend for friend in player.get_faction().get_friends(gh.state) if friend is not player]
+faction_friends = player.get_faction().get_friends(gh.state)
+if faction_friends is not None:
+    faction_friends = [friend for friend in faction_friends if friend is not player]
 %>
 % if faction_friends is not None:
 
@@ -26,6 +28,7 @@ There is nobody you know in your faction.
 % endif
 % endif
 
+% if player.actions:
 **Night Actions**
 You may reply to this email with the actions you would like to perform, using the syntax specified in **bold** below, one per line. You must specify all actions in the order below. If you do not wish to take an action, you may use the word **ignore**. You may also use the word **cancel** to cancel a night action.
 
@@ -42,3 +45,4 @@ ${i}. **${actions.COMMANDS[action.__class__].substitute_with_name(lambda name: '
     * This action may only be used ${action.num_shots} time(s).
 % endif
 % endfor
+% endif
