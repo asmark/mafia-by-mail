@@ -1,8 +1,8 @@
 from . import mail
 
 
-def send_private(mailer, gh, id, player_spec, text, reply=False):
-    resp = mailer.send(
+async def send_private(mailer, gh, id, player_spec, text, reply=False):
+    resp = await mailer.send(
         player_spec['email'],
         mail.make_markdown_email(text, {
             'From': '"Mafia Game (Private)" <game-{id}-private@{domain}>'
@@ -15,8 +15,8 @@ def send_private(mailer, gh, id, player_spec, text, reply=False):
     player_spec['last_message_id'] = resp['id']
 
 
-def send_moderator(mailer, gh, id, text):
-    return mailer.send(
+async def send_moderator(mailer, gh, id, text):
+    await mailer.send(
         gh.meta['moderator_email'],
         mail.make_markdown_email(text, {
             'From': '"Mafia Game (Mod)" <game-{id}-mod@{domain}>'.format(
@@ -26,8 +26,8 @@ def send_moderator(mailer, gh, id, text):
         }, extensions=['markdown.extensions.nl2br']))
 
 
-def send_public(mailer, gh, id, text):
-    resp = mailer.send(
+async def send_public(mailer, gh, id, text):
+    resp = await mailer.send(
         [player_spec['email'] for player_spec in gh.meta['players']],
         mail.make_markdown_email(text, {
             'From': '"Mafia Game (Public)" <game-{id}-public@{domain}>'
