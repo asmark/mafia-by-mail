@@ -45,21 +45,17 @@ async def end_night(id):
 
         if not gh.state.is_over():
             intermediate_day.apply_async((id,), countdown=gh.meta['day_duration']-WARNING_TIME)
+            end_day.apply_async((id,), countdown=gh.meta['day_duration'])
 
 @celery.app.task
 @make_sync
 async def intermediate_night(id):
     async with services['store'].transaction(id) as gh:
-        turn_number = gh.state.turn.number
-
         alive = set(gh.state.get_alive_players())
 
         for player, player_spec in alive:
             await mail_templates.send_private(
                 services['mako'].get_templates('end_intermediate_night.mako').render()
-
-        if not gh.state.is_over():
-            end_night.apply_async((id,), countdown=WARNING_TIME)
 
 @celery.app.task
 @make_sync
@@ -81,18 +77,14 @@ async def end_day(id):
 
         if not gh.state.is_over():
             intermediate_night.apply_async((id,), countdown=gh.meta['night_duration']-WARNING_TIME)
+            end_night.apply_async((id,), countdown=gh.meta['night_duration'])
 
 @celery.app.task
 @make_sync
 async def intermediate_day(id):
     async with services['store'].transaction(id) as gh:
-        turn_number = gh.state.turn.number
-
         alive = set(gh.state.get_alive_players())
 
         for player, player_spec in alive:
             await mail_templates.send_private(
                 services['mako'].get_templates('end_intermediate_day.mako').render()
-
-        if not gh.state.is_over():
-            end_day.apply_async((id,), countdown=WARNING_TIME)
