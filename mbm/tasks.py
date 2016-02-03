@@ -30,6 +30,9 @@ async def end_night(id):
         players = dict(zip(gh.state.players, gh.meta['players']))
 
         for player, player_spec in players.items():
+            if player.is_dead():
+                continue
+
             await mail_templates.send_private(
                 services['mail'], gh, id, player_spec,
                 services['mako'].get_template('end_night_private.mako').render(
