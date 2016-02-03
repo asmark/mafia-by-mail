@@ -17,6 +17,9 @@ from mafia import invalidities
 
 
 async def new_game(request):
+    if request.GET['key'] != request.app['config']['server']['key']:
+        return web.json_response({'error': 'bad new game request'}, status=403)
+
     id = uuid.uuid4().hex
     print("New game! " + id)
     try:
