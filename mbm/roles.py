@@ -17,16 +17,16 @@ class Role(object):
 
 
 class SimpleRole(Role):
-    def __init__(self, maker):
+    def __init__(self, maker, *args, **kwargs):
         self.maker = maker
-        self.player = maker()
+        self.player = maker(*args, **kwargs)
 
     def describe(self, players):
         return string.reformat_lines(inspect.getdoc(self.maker))
 
 
-def SR(maker):
-    return functools.partial(SimpleRole, maker)
+def SR(*args, **kwargs):
+    return functools.partial(SimpleRole, *args, **kwargs)
 
 
 class Lyncher(Role):
@@ -49,24 +49,29 @@ ROLES = {
     'Mafia Goon': SR(roles.goon),
     'Vanilla Townie': SR(roles.vanilla),
     'Mafia Godfather': SR(roles.godfather),
-    'Town Cop': SR(roles.cop),
-    'Town Doctor': SR(roles.doctor),
-    'Town Roleblocker': SR(roles.roleblocker),
-    'Town Bus Driver': SR(roles.bus_driver),
-    'Town Suicidal': SR(roles.suicidal),
-    'Town Vigilante': SR(roles.vigilante),
-    'Town Forensic Investigator': SR(roles.forensic_investigator),
-    'Town Commuter': SR(roles.commuter),
-    'Town Watcher': SR(roles.watcher),
-    'Town Tracker': SR(roles.tracker),
-    'Town Bodyguard': SR(roles.bodyguard),
-    'Town Jester': SR(roles.jester),
-    'Town Double Voter': SR(roles.double_voter),
     'Cult Leader': SR(roles.cult_leader),
-    'Town Vote Thief': SR(roles.vote_thief),
-    'Town Redirector': SR(roles.redirector),
-    'Town Deflector': SR(roles.deflector),
-    'Town Hider': SR(roles.hider),
-    'Town Jailkeeper': SR(roles.jailkeeper),
     'Lyncher': Lyncher,
 }
+
+for suffix, maker in {
+    'Cop': roles.cop,
+    'Doctor': roles.doctor,
+    'Roleblocker': roles.roleblocker,
+    'Bus Driver': roles.bus_driver,
+    'Suicidal': roles.suicidal,
+    'Vigilante': roles.vigilante,
+    'Forensic Investigator': roles.forensic_investigator,
+    'Commuter': roles.commuter,
+    'Watcher': roles.watcher,
+    'Tracker': roles.tracker,
+    'Bodyguard': roles.bodyguard,
+    'Jester': roles.jester,
+    'Double Voter': roles.double_voter,
+    'Vote Thief': roles.vote_thief,
+    'Redirector': roles.redirector,
+    'Deflector': roles.deflector,
+    'Hider': roles.hider,
+    'Jailkeeper': roles.jailkeeper,
+}.items():
+    ROLES['Town ' + suffix] = SR(maker)
+    ROLES['Mafia ' + suffix] = SR(maker, faction=factions.DEFAULT_MAFIA)
