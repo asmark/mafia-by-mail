@@ -10,7 +10,9 @@ Day ${turn_number} has ended and it is now night.
 
 <%vote:summary ballot="${ballot}" />
 
+% if ballot.get_candidates():
 The following players are up for lynching:
+
 % for candidate in ballot.get_candidates():
 * ${players[candidate]['name']}
 % endfor

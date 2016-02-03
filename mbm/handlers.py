@@ -12,11 +12,13 @@ from . import mail_templates
 from . import string
 from . import tasks
 
+from mafia import game
 from mafia import invalidities
 
 
 async def new_game(request):
     id = uuid.uuid4().hex
+    print("New game! " + id)
     try:
         request.app['store'].create(id, await request.json())
     except jsonschema.exceptions.ValidationError as e:
@@ -59,14 +61,8 @@ async def process_mail(request):
         return web.json_response({'error': 'bad webhook request'}, status=403)
 
     id = request.GET['id']
-    commands = [re.sub(r'\s+', ' ', line.strip()).lower()
-                for line in post['stripped-text'].split('\n')]
-
-    # TODO: votes
 
     async with request.app['store'].transaction(id) as gh:
-        plan = gh.state.turn.get_plan()
-
         players = dict(zip(gh.state.players, gh.meta['players']))
         lower_player_mapping = dict(
             zip((player_spec['name'].lower()
@@ -76,62 +72,127 @@ async def process_mail(request):
                       if player_spec['email'].lower() == post['sender'])
         player_spec = players[player]
 
-        results = []
 
-        for action, command in itertools.zip_longest(
-            player.actions, commands, fillvalue=None):
-            if action is None:
-                results.append("There aren't that many actions to perform.")
-                continue
+        if gh.state.turn.phase == game.Phase.NIGHT:
+            await handle_night(gh, id, request, player, player_spec, players,
+                               lower_player_mapping)
+        elif gh.state.turn.phase == game.Phase.DAY:
+            await handle_day(gh, id, request, player, player_spec, players,
+                             lower_player_mapping)
 
-            if command is None:
-                results.append('Missing details for this action; ignoring.')
-                continue
+    return web.Response()
 
-            template = actions.COMMANDS[action.__class__]
 
-            if command == 'ignore':
-                results.append('Ignoring.')
-                continue
-            elif command == 'cancel':
-                results.append('Cancelling.')
-                plan.dequeue(action, player)
-                continue
+async def handle_night(gh, id, request, player, player_spec, players,
+                       lower_player_mapping):
+    plan = gh.state.turn.get_plan()
 
-            expr = template.substitute_with_name(
-                lambda name: r'(?P<{name}>.+?)'.format(name=name)) + '$'
-            match = re.match(expr, command)
+    post = await request.post()
+    commands = [re.sub(r'\s+', ' ', line.strip()).lower()
+                for line in post['stripped-text'].split('\n')]
+    results = []
 
-            if match is None:
-                results.append('Not of the form: {}'.format(
-                    template.substitute_with_name(
-                        lambda name: '_' + name + '_')))
-                continue
+    for action, command in itertools.zip_longest(
+        player.actions, commands, fillvalue=None):
+        if action is None:
+            results.append("There aren't that many actions to perform.")
+            continue
 
-            targets = {}
-            for slot, name in match.groupdict().items():
-                try:
-                    targets[slot] = lower_player_mapping[name]
-                except KeyError:
-                    results.append("Couldn't find a player called '{}'".format(
-                        name))
-                    continue
+        if command is None:
+            results.append('Missing details for this action; ignoring.')
+            continue
 
-            ordering = list(action.TARGET_SELECTORS.keys())
-            targets = [target for _, target in sorted(
-                targets.items(), key=lambda kv: ordering.index(kv[0]))]
+        template = actions.COMMANDS[action.__class__]
 
+        if command == 'ignore':
+            results.append('Ignoring.')
+            continue
+        elif command == 'cancel':
+            results.append('Cancelling.')
+            plan.dequeue(action, player)
+            continue
+
+        expr = template.substitute_with_name(
+            lambda name: r'(?P<{name}>.+?)'.format(name=name)) + '$'
+        match = re.match(expr, command)
+
+        if match is None:
+            results.append('Not of the form: {}'.format(
+                template.substitute_with_name(
+                    lambda name: '_' + name + '_')))
+            continue
+
+        targets = {}
+        for slot, name in match.groupdict().items():
             try:
-                plan.queue(action, player, *targets)
-            except invalidities.Invalidity as e:
-                results.append(string.reformat_lines(inspect.getdoc(e)))
+                targets[slot] = lower_player_mapping[name]
+            except KeyError:
+                results.append("Couldn't find a player called '{}'".format(
+                    name))
+                continue
 
-            results.append('Okay, planned.')
+        ordering = list(action.TARGET_SELECTORS.keys())
+        targets = [target for _, target in sorted(
+            targets.items(), key=lambda kv: ordering.index(kv[0]))]
+
+        try:
+            plan.queue(action, player, *targets)
+        except invalidities.Invalidity as e:
+            results.append(string.reformat_lines(inspect.getdoc(e)))
+
+        results.append('Okay, planned.')
+
+    await mail_templates.send_private(
+        request.app['mail'], gh, id, player_spec,
+        request.app['mako'].get_template('night_action.mako').render(
+            gh=gh, player=player, players=players, plan=plan,
+            commands=commands, results=results))
+
+
+async def handle_day(gh, id, request, player, player_spec, players,
+                     lower_player_mapping):
+    ballot = gh.state.turn.get_ballot()
+
+    post = await request.post()
+    text = re.sub(r'\s+', ' ', post['stripped-text']).strip().lower()
+
+    if text == 'retract':
+        ballot.retract(player)
+        votee = None
 
         await mail_templates.send_private(
             request.app['mail'], gh, id, player_spec,
-            request.app['mako'].get_template('night_action.mako').render(
-                gh=gh, player=player, players=players, plan=plan,
-                commands=commands, results=results))
+            "You retracted your vote.")
+    else:
+        match = re.match(r'vote (?P<name>.+?)$', text)
+        if match is None:
+            await mail_templates.send_private(
+                request.app['mail'], gh, id, player_spec,
+                "No idea what you wanted. Try **vote _player_** or **retract**?")
+            return
 
-        return web.Response()
+        try:
+            votee = lower_player_mapping[match.group('name')]
+        except KeyError:
+            await mail_templates.send_private(
+                request.app['mail'], gh, id, player_spec,
+                "Couldn't find a player called '{}'.".format(match.group('name')))
+            return
+
+        try:
+            ballot.vote(player, votee)
+        except invalidities.Invalidity as e:
+            await mail_templates.send_private(
+                request.app['mail'], gh, id, player_spec,
+                "Could not vote for {}: {}".format(players[votee]['name'], str(e)))
+            return
+
+        await mail_templates.send_private(
+            request.app['mail'], gh, id, player_spec,
+            "You cast your vote for **{}**.".format(players[votee]['name']))
+
+    await mail_templates.send_public(
+        request.app['mail'], gh, id,
+        request.app['mako'].get_template('vote.mako').render(
+            gh=gh, player_spec=player_spec, player=player, players=players,
+            ballot=ballot, votee=votee))

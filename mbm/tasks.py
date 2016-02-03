@@ -31,10 +31,10 @@ async def end_night(id):
 
         for player, player_spec in players.items():
             messages = list(gh.state.turn.get_messages_for_player(player))
-            if not messages:
-                continue
-
-            # TODO: send stupid night messages
+            await mail_templates.send_private(
+                services['mail'], gh, id, player_spec,
+                services['mako'].get_template('end_night_private.mako').render(
+                    messages=messages, players=players))
 
         await mail_templates.send_public(
             services['mail'], gh, id,

@@ -5,6 +5,8 @@ from mbm import actions
 player_acts = [act for act in plan.get_queued_actions().values() if act.source is player]
 %>
 
+You wanted to plan the following actions:
+
 % for i, (command, result) in enumerate(itertools.zip_longest(commands, results, fillvalue=None)):
 ${i}. **${command or '(not specified)'}:** ${result}
 % endfor
