@@ -75,6 +75,7 @@ class GameHolder(object):
                 'name': player_spec['name'],
                 'email': player_spec['email'],
                 'role': player_spec['role'],
+                'last_message_id': None,
                 'flavored_role': player_spec.get(
                     'flavored_role', player_spec['role']),
                 'flavor_text': player_spec.get(
@@ -85,6 +86,7 @@ class GameHolder(object):
             'night_duration': spec['night_duration'],
             'day_duration': spec['day_duration'],
             'moderator_email': spec.get('moderator_email'),
+            'last_message_id': None,
         }, state)
 
     @classmethod

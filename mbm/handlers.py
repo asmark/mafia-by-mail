@@ -74,7 +74,8 @@ async def process_mail(request):
         player = next(player for player, player_spec in players.items()
                       if player_spec['email'].lower() == post['sender'])
         player_spec = players[player]
-
+        player_spec['last_message_id'] = post.get(
+            'Message-ID', player_spec['last_message_id'])
 
         if gh.state.turn.phase == game.Phase.NIGHT:
             await handle_night(gh, id, request, player, player_spec, players,
