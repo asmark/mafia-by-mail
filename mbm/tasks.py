@@ -30,11 +30,10 @@ async def end_night(id):
         players = dict(zip(gh.state.players, gh.meta['players']))
 
         for player, player_spec in players.items():
-            messages = list(gh.state.turn.get_messages_for_player(player))
             await mail_templates.send_private(
                 services['mail'], gh, id, player_spec,
                 services['mako'].get_template('end_night_private.mako').render(
-                    messages=messages, players=players))
+                    gh=gh, player=player, players=players))
 
         await mail_templates.send_public(
             services['mail'], gh, id,
