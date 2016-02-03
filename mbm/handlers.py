@@ -174,7 +174,7 @@ async def handle_day(gh, id, request, player, player_spec, players,
                 request.app['mail'], gh, id, player_spec,
                 "No idea what you wanted."
                 "Try **vote _player_** or **retract**?",
-                reply=True
+                reply=True)
             return
 
         try:
